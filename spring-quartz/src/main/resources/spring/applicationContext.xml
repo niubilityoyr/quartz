@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+    http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context.xsd
+    http://www.springframework.org/schema/tx
+    http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+
+	<!-- 使用MethodInvokingJobDetailFactoryBeand定义任务 -->
+	<bean id="jobDemo1" 
+		class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<!-- 调用正在任务目标(作业)   -->  
+        <property name="targetObject">  
+            <bean class="com.oyr.quartz.MyBean" />  
+        </property>  
+       <!-- 调用目标(作业)方法,方法是真正执行任务的内容  -->  
+        <property name="targetMethod" value="printMessage" />  
+        <property name="concurrent" value="false" /><!-- 作业不并发调度 -->
+	</bean>
+	
+	<!-- 任务触发器，使用的是SimpleTriggerFactoryBean -->  
+    <bean id="simpleTrigger" class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">  
+        <property name="jobDetail" ref="jobDemo1" />
+        <property name="startDelay" value="1000" /><!-- 调度工厂实例化后，经过1秒开始执行调度 -->  
+        <property name="repeatInterval" value="2000" /><!-- 每2秒调度一次 -->  
+    </bean>
+    
+    
+    
+    <!-- 使用JobDetailFactoryBean创建任务 -->
+    <bean id="jobDemo2" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    	<!-- 指定job的名称 -->
+        <property name="name" value="oyr_job"/>
+        <!-- 指定job的分组 -->
+        <property name="group" value="oyr_group"/>
+        <!-- 指定具体的job类 -->
+        <property name="jobClass" value="com.oyr.quartz.MyBean2"/>
+        <!-- 指定要传入的参数 -->
+        <property name="jobDataMap">
+        	<map>
+        		<entry key="username" value="欧阳荣" value-type="java.lang.String"></entry>
+        	</map>
+        </property>
+        <!-- 必须设置为true，如果为false，当没有活动的触发器与之关联时会在调度器中会删除该任务  -->
+        <property name="durability" value="true"/>
+    </bean>
+	
+	<!-- 定义触发器，使用的是CronTriggerFactoryBean -->
+	<bean id="cronTriggerFactoryBean" 
+		class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<!-- 指定Trigger的名称 -->
+        <property name="name" value="oyr_trigger"/>
+        <!-- 指定Trigger的名称 -->
+        <property name="group" value="oyr_trigger_group"/>
+        <!-- 指定Tirgger绑定的Job -->
+        <property name="jobDetail" ref="jobDemo2"/>
+        <!-- 指定Cron 的表达式 ，当前是每隔1s运行一次 -->
+        <property name="cronExpression" value="0/5 * * * * ?" />
+	</bean>
+	
+	<!-- 配置调度工厂 -->  
+    <bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">  
+	    <property name="triggers">  
+	        <list>
+	            <ref bean="cronTriggerFactoryBean" />
+	        </list>  
+	    </property>
+    </bean>
+	
+</beans>
